@@ -1,7 +1,7 @@
 fastapi==0.115.6
 uvicorn[standard]==0.32.1
 sentence-transformers==3.3.1
-faiss-cpu==1.9.0
+faiss-cpu>=1.7.4
 anthropic==0.52.0
 openai==1.86.0
 # ── LangChain stack (pinned for fast, deterministic installs) ──
