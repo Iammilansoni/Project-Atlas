@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project ATLAS — AI Learning Path Recommender</title>
+  <meta name="description" content="AI-powered personalized learning path generator using RAG pipeline with Claude Sonnet and Gemini 2.5 Flash" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- Background orbs -->
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="bg-orb orb-3"></div>
+
+  <div class="app-shell">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">◈</span>
+        <div>
+          <span class="logo-title">PROJECT ATLAS</span>
+          <span class="logo-sub">AI Learning Path Recommender</span>
+        </div>
+      </div>
+      <div id="statusBadge" class="status-badge status-checking">
+        <span class="status-dot"></span>
+        <span id="statusText">Checking…</span>
+      </div>
+    </header>
+
+    <!-- Hero section -->
+    <main class="main">
+      <section class="hero">
+        <div class="hero-eyebrow">RAG · MiniLM · FAISS · Claude Sonnet</div>
+        <h1 class="hero-title">
+          What do you want<br/>
+          <span class="gradient-text">to master?</span>
+        </h1>
+        <p class="hero-sub">
+          Describe your learning goal and get a personalized 5-step path
+          built from thousands of Coursera courses — powered by AI.
+        </p>
+
+        <!-- Search form -->
+        <form id="searchForm" class="search-form" autocomplete="off">
+          <div class="input-wrapper">
+            <span class="input-icon">⟡</span>
+            <input
+              id="goalInput"
+              type="text"
+              class="goal-input"
+              placeholder="e.g. Learn Machine Learning from scratch…"
+              maxlength="300"
+              required
+              aria-label="Learning goal"
+            />
+            <button type="submit" id="submitBtn" class="submit-btn" aria-label="Generate learning path">
+              <span class="btn-text">Generate Path</span>
+              <span class="btn-icon">→</span>
+            </button>
+          </div>
+          <div class="suggestions">
+            <span class="suggestions-label">Try:</span>
+            <button type="button" class="suggestion-chip" data-goal="Learn Machine Learning from scratch">Machine Learning</button>
+            <button type="button" class="suggestion-chip" data-goal="Become a Full Stack Web Developer">Full Stack Dev</button>
+            <button type="button" class="suggestion-chip" data-goal="Master Data Science and Python">Data Science</button>
+            <button type="button" class="suggestion-chip" data-goal="Learn Cloud Computing with AWS">Cloud &amp; AWS</button>
+            <button type="button" class="suggestion-chip" data-goal="Get into Cybersecurity and Ethical Hacking">Cybersecurity</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Loading state -->
+      <section id="loadingSection" class="loading-section hidden">
+        <div class="loading-card">
+          <div class="loading-orb"></div>
+          <div class="loading-text">
+            <div class="loading-title">Analyzing your goal…</div>
+            <div class="loading-steps-container">
+              <div class="loading-step" id="lStep1">⟡ Embedding your goal with MiniLM</div>
+              <div class="loading-step" id="lStep2">⟡ Searching FAISS vector index</div>
+              <div class="loading-step" id="lStep3">⟡ Enriching with ratings &amp; reviews</div>
+              <div class="loading-step" id="lStep4">⟡ Reasoning with AI…</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results section -->
+      <section id="resultsSection" class="results-section hidden">
+
+        <!-- Result header -->
+        <div class="result-header">
+          <div class="result-meta">
+            <div class="result-goal-label">Learning Path for</div>
+            <h2 id="resultGoal" class="result-goal"></h2>
+          </div>
+          <div class="result-badges">
+            <span id="llmModeBadge" class="mode-badge"></span>
+            <span id="timelineBadge" class="timeline-badge"></span>
+          </div>
+        </div>
+
+        <!-- Skill Gap Analysis -->
+        <div id="skillGapCard" class="skill-gap-card glass-card">
+          <div class="card-header">
+            <span class="card-icon">⚡</span>
+            <h3 class="card-title">Skill Gap Analysis</h3>
+          </div>
+          <div class="skill-gap-grid">
+            <div class="skill-group">
+              <div class="skill-group-label">Current Level</div>
+              <div id="currentLevel" class="skill-level-badge"></div>
+            </div>
+            <div class="skill-group">
+              <div class="skill-group-label">Target Skills</div>
+              <div id="targetSkills" class="skill-tags"></div>
+            </div>
+            <div class="skill-group">
+              <div class="skill-group-label">Skills to Build</div>
+              <div id="missingSkills" class="skill-tags missing"></div>
+            </div>
+          </div>
+          <div id="recommendedFocus" class="focus-text"></div>
+        </div>
+
+        <!-- Learning Path Steps -->
+        <div class="steps-header">
+          <h3 class="steps-title">Your 5-Step Learning Path</h3>
+          <div id="hoursEstimate" class="hours-estimate"></div>
+        </div>
+        <div id="stepsContainer" class="steps-container"></div>
+
+        <!-- Pro Tip -->
+        <div id="proTipCard" class="pro-tip-card glass-card">
+          <span class="pro-tip-icon">💡</span>
+          <div>
+            <div class="pro-tip-label">Pro Tip</div>
+            <div id="proTipText" class="pro-tip-text"></div>
+          </div>
+        </div>
+
+        <!-- Reset button -->
+        <div class="reset-row">
+          <button id="resetBtn" class="reset-btn">← Search Again</button>
+        </div>
+      </section>
+
+      <!-- Error section -->
+      <section id="errorSection" class="error-section hidden">
+        <div class="error-card glass-card">
+          <div class="error-icon">⚠</div>
+          <div id="errorMsg" class="error-msg"></div>
+          <button id="errorRetryBtn" class="reset-btn">Try Again</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>PROJECT ATLAS © 2025</span>
+      <span class="footer-sep">·</span>
+      <a href="/docs" target="_blank" class="footer-link">API Docs</a>
+      <span class="footer-sep">·</span>
+      <a href="/health" target="_blank" class="footer-link">Health</a>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

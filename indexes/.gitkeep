@@ -1,0 +1,2 @@
+# FAISS index files are stored here after running build_index.py
+# These files are git-ignored

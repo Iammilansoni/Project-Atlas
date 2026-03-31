@@ -1,0 +1,46 @@
+# === PROJECT ATLAS — .gitignore ===
+
+# ── Secrets & local config ─────────────────────────────────────────────────
+.env
+
+# ── Python virtual environment ─────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Python bytecode ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# ── Distribution / packaging ───────────────────────────────────────────────
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+
+# ── Unit test / coverage ───────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── IDEs & editors ─────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── HuggingFace model cache (large, not needed in Git) ─────────────────────
+.cache/
+models_cache/
+
+# NOTE: data/ CSV files and indexes/faiss_store/ ARE intentionally committed
+# so that Render can serve the app without a build-time index generation step.
