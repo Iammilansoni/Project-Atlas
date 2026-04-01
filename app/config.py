@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
     # Embedding
-    embedding_model: str = "all-MiniLM-L6-v2"
+    embedding_model: str = "BAAI/bge-small-en-v1.5"  # fastembed ONNX model (384-dim, ~80MB)
 
     # Data paths (resolved relative to repo root)
     data_path: str = "data/Coursera.csv"

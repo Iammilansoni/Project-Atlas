@@ -6,9 +6,14 @@ from fastapi.responses import JSONResponse
 
 from api.schemas.request import RecommendRequest
 from api.schemas.response import LearningPathResponse, CourseStepResponse, SkillGapResponse
-from services.rag_service import rag_service
 
 router = APIRouter()
+
+
+def _get_rag_service():
+    """Deferred import to avoid loading torch/ONNX at module-import time."""
+    from services.rag_service import rag_service
+    return rag_service
 
 
 def _to_response(path) -> LearningPathResponse:
@@ -45,13 +50,17 @@ def _to_response(path) -> LearningPathResponse:
 @router.post("/recommend-path", response_model=LearningPathResponse)
 async def recommend_path(request: RecommendRequest):
     """Generate a personalized 5-step learning path for the given goal."""
-    if not rag_service.is_ready:
+    svc = _get_rag_service()
+    if not svc.is_ready:
         raise HTTPException(
             status_code=503,
-            detail="Index not built yet. Run: python scripts/build_index.py",
+            detail=(
+                "Service is still initialising — the embedding model and FAISS index "
+                "are loading in the background. Please retry in a few seconds."
+            ),
         )
     try:
-        learning_path = await rag_service.recommend(request.goal)
+        learning_path = await svc.recommend(request.goal)
         return _to_response(learning_path)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))

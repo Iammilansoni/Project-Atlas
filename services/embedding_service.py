@@ -1,20 +1,51 @@
 from __future__ import annotations
 
 """
-EmbeddingService — LangChain HuggingFaceEmbeddings wrapper.
+EmbeddingService — native fastembed (ONNX Runtime only, no PyTorch).
 
-Backed by all-MiniLM-L6-v2 (384-dim). Used by both the index builder
-and the FAISS vector store for query encoding at inference time.
+Uses fastembed.TextEmbedding directly and wraps it in a LangChain-compatible
+Embeddings class so FAISSIndex.build / FAISSIndex.load continue to work
+unchanged.  This completely avoids importing sentence-transformers or torch,
+keeping resident memory well under Render's 512 MB free-tier limit.
 """
 
 import threading
-from langchain_huggingface import HuggingFaceEmbeddings
+from typing import List
+
+from langchain_core.embeddings import Embeddings
 
 from app.config import settings
 
 
+# ── LangChain-compatible wrapper ───────────────────────────────────────────────
+
+class FastEmbedLangChain(Embeddings):
+    """
+    Thin LangChain Embeddings adapter around fastembed.TextEmbedding.
+
+    Satisfies the langchain_core.embeddings.Embeddings interface
+    (embed_documents / embed_query) so it can be passed directly to
+    langchain_community.vectorstores.FAISS.
+    """
+
+    def __init__(self, model_name: str):
+        # Import here so the heavy ONNX model is only loaded when needed
+        from fastembed import TextEmbedding
+        self._model = TextEmbedding(model_name=model_name)
+
+    # LangChain Embeddings interface ──────────────────────────────────────────
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return [vec.tolist() for vec in self._model.embed(texts)]
+
+    def embed_query(self, text: str) -> List[float]:
+        return list(self._model.embed([text]))[0].tolist()
+
+
+# ── Singleton service ──────────────────────────────────────────────────────────
+
 class EmbeddingService:
-    """Singleton LangChain HuggingFaceEmbeddings instance."""
+    """Singleton that lazily initialises FastEmbedLangChain on first use."""
 
     _instance: "EmbeddingService | None" = None
     _lock = threading.Lock()
@@ -22,34 +53,35 @@ class EmbeddingService:
     def __new__(cls) -> "EmbeddingService":
         with cls._lock:
             if cls._instance is None:
-                cls._instance = super().__new__(cls)
-                cls._instance._embeddings = None
-                cls._instance._loaded = False
+                ins = super().__new__(cls)
+                ins._embeddings: FastEmbedLangChain | None = None
+                ins._loaded = False
+                cls._instance = ins
         return cls._instance
 
     def load(self) -> None:
         if not self._loaded:
-            print(f"⏳ Loading embedding model via LangChain: {settings.embedding_model}")
-            self._embeddings = HuggingFaceEmbeddings(
-                model_name=settings.embedding_model,
-                model_kwargs={"device": "cpu"},
-                encode_kwargs={"normalize_embeddings": True},
+            print(
+                f"⏳ Loading embedding model via fastembed (ONNX): "
+                f"{settings.embedding_model}"
             )
+            self._embeddings = FastEmbedLangChain(model_name=settings.embedding_model)
             self._loaded = True
-            print("✅ LangChain HuggingFaceEmbeddings loaded.")
+            print("✅ FastEmbedLangChain loaded.")
+
+    # ── Properties ────────────────────────────────────────────────────────────
 
     @property
-    def lc_embeddings(self) -> HuggingFaceEmbeddings:
-        """Return the raw LangChain embeddings object (for FAISS build/load)."""
+    def lc_embeddings(self) -> FastEmbedLangChain:
+        """Return the LangChain-compatible embeddings object."""
         if not self._loaded:
             self.load()
-        return self._embeddings
+        return self._embeddings  # type: ignore[return-value]
 
     def embed_query(self, text: str) -> list[float]:
-        """Embed a single text string → list[float] (LangChain interface)."""
         if not self._loaded:
             self.load()
-        return self._embeddings.embed_query(text)
+        return self._embeddings.embed_query(text)  # type: ignore[union-attr]
 
     @property
     def is_loaded(self) -> bool:

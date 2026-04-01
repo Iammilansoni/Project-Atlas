@@ -1,22 +1,30 @@
+# ── Web server ───────────────────────────────────────────────────────────────
 fastapi==0.115.6
 uvicorn[standard]==0.32.1
-sentence-transformers==3.3.1
-faiss-cpu>=1.7.4
+aiofiles==24.1.0
+
+# ── Embeddings: fastembed uses ONNX Runtime only (no PyTorch, ~80MB vs ~900MB) ──
+fastembed==0.4.2
+faiss-cpu>=1.7.4,<2.0.0
+
+# ── LLM clients ──────────────────────────────────────────────────────────────
 anthropic==0.52.0
 openai==1.86.0
-# ── LangChain stack (pinned for fast, deterministic installs) ──
+
+# ── LangChain stack (minimal — NO langchain-huggingface to avoid torch) ──────
 langchain==0.3.25
 langchain-core==0.3.63
 langchain-anthropic==0.3.15
 langchain-openai==0.3.16
-langchain-huggingface==0.1.2
 langchain-community==0.3.23
-# ───────────────────────────────────────────────────────────────
+
+# ── Data & ML (lightweight) ──────────────────────────────────────────────────
 pandas==2.2.3
-vaderSentiment==3.3.2
-pydantic-settings==2.7.0
-python-dotenv==1.0.1
 numpy==1.26.4
 scikit-learn==1.5.2
+vaderSentiment==3.3.2
+
+# ── Utils ─────────────────────────────────────────────────────────────────────
+pydantic-settings==2.7.0
+python-dotenv==1.0.1
 tqdm==4.67.1
-aiofiles==24.1.0
