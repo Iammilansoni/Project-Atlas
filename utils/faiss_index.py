@@ -112,15 +112,23 @@ class FAISSIndex:
     def search(self, query: str, k: int = 15) -> list[tuple[Course, float]]:
         """
         Semantic search on the vectorstore.
-        Returns (Course, relevance_score) pairs — score is cosine similarity.
+        Returns (Course, similarity_score) pairs in [0, 1].
+
+        Uses similarity_search_with_score which returns L2 distances, then
+        converts via similarity = 1 / (1 + distance) so:
+          - distance 0  → similarity 1.0  (perfect match)
+          - distance ∞  → similarity 0.0  (unrelated)
+        This avoids the LangChain relevance-score normalizer that breaks on
+        fastembed vectors and emits spurious UserWarning with negative scores.
         """
         if self._vs is None:
             raise RuntimeError("Index not loaded. Run: python scripts/build_index.py")
 
+        # Returns (Document, L2_distance) — lower distance = better match
         results: list[tuple[Document, float]] = \
-            self._vs.similarity_search_with_relevance_scores(query, k=k)
+            self._vs.similarity_search_with_score(query, k=k)
 
-        return [(_doc_to_course(doc), score) for doc, score in results]
+        return [(_doc_to_course(doc), 1.0 / (1.0 + dist)) for doc, dist in results]
 
     # ── Properties ─────────────────────────────────────────────────────────────
 

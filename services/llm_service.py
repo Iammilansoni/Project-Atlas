@@ -106,7 +106,37 @@ def _parse_response(raw: str, goal: str, mode: str) -> LearningPath:
     raw = re.sub(r"^```(?:json)?\s*", "", raw.strip())
     raw = re.sub(r"\s*```$", "", raw.strip())
 
-    data = json.loads(raw)
+    # Robust extraction: find the outermost {...} block in case of prose wrapping
+    # or truncation that left valid JSON somewhere inside a larger broken string
+    data: dict | None = None
+    # First try the whole string
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+
+    # If that failed, find the first '{' and last '}' and try that substring
+    if data is None:
+        start = raw.find("{")
+        end = raw.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            try:
+                data = json.loads(raw[start : end + 1])
+            except json.JSONDecodeError:
+                pass
+
+    # Last resort: try to incrementally trim from the right until parseable
+    if data is None and "{" in raw:
+        candidate = raw[raw.find("{"):]
+        for trim in range(len(candidate) - 1, 0, -1):
+            try:
+                data = json.loads(candidate[:trim])
+                break
+            except json.JSONDecodeError:
+                continue
+
+    if data is None:
+        raise ValueError(f"Could not extract JSON from LLM response. Raw: {raw[:300]}")
 
     sg = data["skill_gap_analysis"]
     skill_gap = SkillGapAnalysis(
@@ -171,7 +201,8 @@ def _call_gemini(goal: str, courses: list[EnrichedCourse]) -> LearningPath:
         api_key=settings.gemini_api_key,
         base_url=settings.gemini_base_url,
         temperature=0.3,
-        max_tokens=4096,
+        max_tokens=8192,      # Increase to prevent mid-JSON truncation
+        streaming=False,      # Never stream — prevents unterminated-string errors
     )
     chain = _PROMPT | llm | _OUTPUT_PARSER
     raw = chain.invoke({
