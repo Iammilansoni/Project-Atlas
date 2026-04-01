@@ -16,6 +16,11 @@
 
 ---
 
+> **⚠️ Heads up — Cold Start**  
+> Project Atlas is deployed on Render's free plan. If the server hasn't received any traffic recently, **the first request may take up to ~1 minute** to respond while the instance spins back up. This is a Render free-tier limitation, not an application issue. Subsequent requests will be fast.
+
+---
+
 ## What is Project Atlas?
 
 You type: *"I want to learn Machine Learning from scratch."*
