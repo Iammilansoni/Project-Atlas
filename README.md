@@ -306,5 +306,5 @@ This design means the API never returns a 503 due to an LLM outage.
 
 Built as part of the KraftX Works CLAUDEpreneur trial — Project ATLAS (EdTech Vertical).
 
-**Milan Soni** — Final year CS student, MERN + AI/ML developer, SIH 2023 Winner  
+**Milan Soni** — MERN + AI/ML developer, SIH 2023 Winner  
 [GitHub](https://github.com/Iammilansoni) · [LinkedIn](https://linkedin.com/in/sonimilan) · milansoni96946@gmail.com
